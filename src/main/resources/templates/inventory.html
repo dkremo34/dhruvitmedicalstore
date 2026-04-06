@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventory Management | Dhruvit Medical</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <style>
+    .s-card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 1px 8px rgba(0,0,0,0.06); border:1px solid #e8edf2; margin-bottom:14px; }
+    .s-card-hdr { font-size:13px; font-weight:700; color:#007BFF; margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid #e8f4fd; display:flex; align-items:center; gap:6px; }
+
+    .inv-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:16px; }
+    .inv-stat {
+      background:#fff; padding:14px; border-radius:10px;
+      box-shadow:0 1px 8px rgba(0,0,0,0.06); border:1px solid #e8edf2;
+      text-align:center; border-left:4px solid; cursor:pointer; transition:transform 0.2s;
+    }
+    .inv-stat:hover { transform:translateY(-2px); }
+    .inv-stat.c-blue { border-left-color:#007BFF; background:#f0f7ff; }
+    .inv-stat.c-red { border-left-color:#dc3545; background:#fef2f2; }
+    .inv-stat.c-amber { border-left-color:#FFC107; background:#fffbeb; }
+    .inv-stat.c-purple { border-left-color:#7c3aed; background:#faf5ff; }
+    .inv-stat.c-green { border-left-color:#28A745; background:#f0fdf4; }
+    .inv-num { font-size:22px; font-weight:800; color:#1e293b; }
+    .inv-lbl { font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase; }
+
+    /* Search */
+    .inv-search { position:relative; margin-bottom:14px; }
+    .inv-search input {
+      width:100%; padding:10px 14px 10px 36px; font-size:13px;
+      border:2px solid #e2e8f0; border-radius:8px; background:#f8fafc;
+      font-family:'Poppins',sans-serif; transition:all 0.2s;
+    }
+    .inv-search input:focus { outline:none; border-color:#007BFF; background:#fff; box-shadow:0 0 0 3px rgba(0,123,255,0.1); }
+    .inv-search::before { content:'🔍'; position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:13px; pointer-events:none; }
+    .inv-suggestions {
+      border:1px solid #e2e8f0; max-height:220px; overflow-y:auto; background:#fff;
+      position:absolute; z-index:200; width:100%; border-radius:8px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.12); display:none; margin-top:3px;
+    }
+    .inv-sg-item { padding:10px 14px; cursor:pointer; font-size:12px; border-bottom:1px solid #f1f5f9; transition:background 0.12s; }
+    .inv-sg-item:hover { background:#f0f7ff; }
+    .inv-sg-item:last-child { border-bottom:none; }
+    .inv-sg-item strong { color:#007BFF; }
+
+    /* Form */
+    .inv-form {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+      padding:16px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2;
+    }
+    .inv-form label { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:3px; }
+    .inv-form input {
+      width:100%; padding:8px 10px; font-size:13px;
+      border:2px solid #e2e8f0; border-radius:6px; background:#fff;
+      font-family:'Poppins',sans-serif; transition:border-color 0.2s;
+    }
+    .inv-form input:focus { outline:none; border-color:#007BFF; box-shadow:0 0 0 2px rgba(0,123,255,0.1); }
+    .inv-form input[readonly] { background:#f0f4f8; color:#64748b; }
+
+    /* Status toast */
+    .stk-status { padding:8px 14px; border-radius:6px; font-size:12px; font-weight:600; display:none; margin:10px 0; }
+    .stk-ok { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+    .stk-warn { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+    .stk-err { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+
+    /* Actions */
+    .inv-actions {
+      display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+      padding:14px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; margin-top:10px;
+    }
+    .inv-actions .btn-group { display:flex; gap:8px; }
+    .inv-btn {
+      padding:9px 18px; font-size:13px; font-weight:700; border:none; border-radius:6px;
+      cursor:pointer; font-family:'Poppins',sans-serif; transition:all 0.2s;
+    }
+    .inv-btn-primary { background:#007BFF; color:#fff; }
+    .inv-btn-primary:hover { background:#0056b3; }
+    .inv-btn-secondary { background:#e2e8f0; color:#475569; }
+    .inv-btn-secondary:hover { background:#cbd5e1; }
+    .inv-btn-success { background:#28A745; color:#fff; }
+    .inv-btn-success:hover { background:#218838; }
+    .export-grp { display:flex; gap:6px; align-items:center; }
+    .export-grp input { padding:6px 8px; font-size:12px; border:1.5px solid #e2e8f0; border-radius:6px; }
+    .export-grp span { font-size:11px; color:#94a3b8; }
+
+    /* Table */
+    .filter-bar {
+      display:grid; grid-template-columns:1fr 1fr; gap:14px;
+      padding:14px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; margin-bottom:14px;
+    }
+    .filter-bar label { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:3px; }
+    .filter-bar input, .filter-bar select {
+      width:100%; padding:8px 10px; font-size:13px;
+      border:2px solid #e2e8f0; border-radius:6px; background:#fff;
+      font-family:'Poppins',sans-serif; transition:border-color 0.2s;
+    }
+    .filter-bar input:focus, .filter-bar select:focus { outline:none; border-color:#007BFF; box-shadow:0 0 0 2px rgba(0,123,255,0.1); }
+
+    .tbl-wrap { overflow-x:auto; border-radius:8px; border:1px solid #e2e8f0; }
+    .s-tbl { width:100%; border-collapse:collapse; min-width:800px; }
+    .s-tbl thead th {
+      padding:14px 10px; font-size:12px; background:#f8fafc; font-weight:700;
+      border:none; border-bottom:2px solid #e2e8f0; color:#64748b;
+      text-transform:uppercase; letter-spacing:0.6px; text-align:center;
+    }
+    .s-tbl tbody tr { transition:background 0.12s; height:auto !important; }
+    .s-tbl tbody tr:hover { background:#f8fafc; }
+    .s-tbl tbody td {
+      padding:9px 10px; border:none; border-bottom:1px solid #f1f5f9;
+      font-size:13px; text-align:left; vertical-align:middle;
+    }
+    .s-tbl .med-name { font-weight:700; color:#1e293b; }
+
+    .pill { padding:3px 10px; border-radius:10px; font-size:10px; font-weight:700; display:inline-block; }
+    .pill-critical { background:#fee2e2; color:#991b1b; }
+    .pill-low { background:#fef3c7; color:#92400e; }
+    .pill-good { background:#dcfce7; color:#166534; }
+
+    .pag { display:flex; justify-content:center; gap:6px; margin-top:14px; }
+    .pag a {
+      padding:6px 12px; font-size:12px; font-weight:600; border-radius:6px;
+      text-decoration:none; color:#475569; background:#fff;
+      border:1px solid #e2e8f0; transition:all 0.15s;
+    }
+    .pag a:hover { border-color:#007BFF; color:#007BFF; }
+    .pag a.active { background:#007BFF; color:#fff; border-color:#007BFF; }
+
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.45); backdrop-filter:blur(2px); }
+    .modal-box { background:#fff; padding:20px; border-radius:12px; width:560px; max-width:92%; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.15); }
+    .modal-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #e8f4fd; }
+    .modal-top h3 { margin:0; color:#007BFF; font-size:15px; font-weight:700; }
+    .modal-x { font-size:22px; color:#94a3b8; cursor:pointer; background:none; border:none; }
+    .modal-x:hover { color:#1e293b; }
+    .stk-item { padding:12px; border:1px solid #e8edf2; border-radius:8px; margin-bottom:8px; background:#f8fafc; cursor:pointer; transition:all 0.15s; }
+    .stk-item:hover { background:#eff6ff; border-color:#93c5fd; }
+    .stk-item-top { display:flex; justify-content:space-between; font-weight:700; color:#007BFF; font-size:13px; margin-bottom:4px; }
+    .stk-item-meta { font-size:11px; color:#64748b; }
+    .stk-item-meta span { margin-right:14px; }
+
+    @media (max-width:768px) { .inv-stats{grid-template-columns:repeat(2,1fr);} .inv-form{grid-template-columns:1fr 1fr;} .filter-bar{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="page-content">
+<div class="container">
+  <h2>Inventory Management</h2>
+
+  <div class="inv-stats">
+    <div class="inv-stat c-blue"><div class="inv-num" id="totalItems">0</div><div class="inv-lbl">Total Items</div></div>
+    <div class="inv-stat c-red" onclick="showStockDetails('critical')"><div class="inv-num" id="criticalStock">0</div><div class="inv-lbl">Critical Stock</div></div>
+    <div class="inv-stat c-amber" onclick="showStockDetails('low')"><div class="inv-num" id="lowStock">0</div><div class="inv-lbl">Low Stock</div></div>
+    <div class="inv-stat c-purple" onclick="showStockDetails('expiring')"><div class="inv-num" id="expiredItems">0</div><div class="inv-lbl">Expiring Soon</div></div>
+    <div class="inv-stat c-green"><div class="inv-num" id="totalValue">₹0</div><div class="inv-lbl">Total Value</div></div>
+  </div>
+
+  <!-- Search & Update Section -->
+  <div class="s-card">
+    <div class="s-card-hdr">🔍 Search & Update Medicine</div>
+    <div class="inv-search">
+      <input type="text" id="searchBox" placeholder="Search medicine by name, batch, or manufacturer...">
+      <div id="suggestions" class="inv-suggestions"></div>
+    </div>
+
+    <div class="inv-form">
+      <input type="hidden" id="id">
+      <div><label>Medicine Name</label><input type="text" id="medicineName" readonly></div>
+      <div><label>Batch Number</label><input type="text" id="batchNo"></div>
+      <div><label>Quantity</label><input type="number" id="quantity" onchange="updateStockStatus(this.value)"></div>
+      <div><label>MRP (₹)</label><input type="number" step="0.01" id="maxRetailPrice"></div>
+      <div><label>Expiry Date</label><input type="date" id="expiryDate"></div>
+      <div><label>Dealer Name</label><input type="text" id="dealerName"></div>
+    </div>
+
+    <div id="stockStatus" class="stk-status"></div>
+
+    <div class="inv-actions">
+      <div class="btn-group">
+        <button id="updateBtn" class="inv-btn inv-btn-primary">Update Medicine</button>
+        <button class="inv-btn inv-btn-secondary" onclick="clearForm()">Clear</button>
+      </div>
+      <div class="export-grp">
+        <span>Stocks:</span>
+        <input type="date" id="exportStartDate">
+        <span>to</span>
+        <input type="date" id="exportEndDate">
+        <button class="inv-btn inv-btn-success" onclick="exportExcel()">Export</button>
+      </div>
+    </div>
+
+    <div id="status" class="stk-status"></div>
+  </div>
+
+  <!-- Medicine Stock List -->
+  <div class="s-card">
+    <div class="s-card-hdr">📋 Stock List</div>
+
+    <div class="filter-bar">
+      <div>
+        <label>Search Medicine</label>
+        <input type="text" id="searchMedicine" placeholder="Type medicine name..." onkeyup="filterTable()">
+      </div>
+      <div>
+        <label>Filter Category</label>
+        <select id="filterCategory" onchange="filterTable()">
+          <option value="">All Categories</option>
+          <option value="Tablet">Tablet</option><option value="Capsule">Capsule</option>
+          <option value="Syrup">Syrup</option><option value="Powder">Powder</option>
+          <option value="Cream">Cream</option><option value="Injection">Injection</option>
+          <option value="Drops">Drops</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="s-tbl" id="stockTable">
+        <thead>
+          <tr>
+            <th style="width:45px;">ID</th>
+            <th>Medicine Name</th>
+            <th>Manufacturer</th>
+            <th>Batch No</th>
+            <th style="width:70px;">Qty</th>
+            <th>Expiry</th>
+            <th>Supplier</th>
+            <th>Category</th>
+            <th style="width:80px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item : ${inventoryPage}">
+            <td th:text="${item.id}"></td>
+            <td class="med-name" th:text="${item.medicine.medicineName}"></td>
+            <td th:text="${item.medicine.manufacturer}"></td>
+            <td th:text="${item.batchNo}"></td>
+            <td th:text="${item.quantity}"></td>
+            <td th:text="${item.expiryDate}"></td>
+            <td th:text="${item.supplierName}"></td>
+            <td th:text="${item.medicine.category}"></td>
+            <td>
+              <span th:if="${item.quantity <= 10}" class="pill pill-critical">Critical</span>
+              <span th:if="${item.quantity > 10 and item.quantity <= 50}" class="pill pill-low">Low</span>
+              <span th:if="${item.quantity > 50}" class="pill pill-good">Good</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="pag">
+    <a th:if="${currentPage > 0}" th:href="@{'/inventory'(page=${currentPage - 1})}">← Prev</a>
+    <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+       th:href="@{'/inventory'(page=${i})}" th:text="${i + 1}"
+       th:classappend="${i == currentPage} ? 'active' : ''"></a>
+    <a th:if="${currentPage < totalPages - 1}" th:href="@{'/inventory'(page=${currentPage + 1})}">Next →</a>
+  </div>
+</div>
+</main>
+
+<div id="stockModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-top"><h3 id="modalTitle">Stock Details</h3><button class="modal-x" onclick="closeStockModal()">&times;</button></div>
+    <div id="stockList"></div>
+  </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+const searchBox=document.getElementById('searchBox'),sgBox=document.getElementById('suggestions'),updateBtn=document.getElementById('updateBtn'),status=document.getElementById('status');
+
+searchBox.addEventListener('keyup',async()=>{
+  const q=searchBox.value.trim();
+  if(q.length<2){sgBox.style.display='none';return;}
+  try{
+    const r=await fetch(`/search?query=${q}`);const data=await r.json();
+    sgBox.innerHTML='';
+    if(data.length){
+      data.forEach(it=>{
+        const d=document.createElement('div');d.className='inv-sg-item';
+        d.innerHTML=`<strong>${it.medicine.medicineName}</strong><br><small>Batch: ${it.batchNo} | Qty: ${it.quantity} | ${it.quantity<=10?'Critical':it.quantity<=50?'Low':'Good'}</small>`;
+        d.onclick=()=>selectMedicine(it.id);sgBox.appendChild(d);
+      });
+      sgBox.style.display='block';
+    } else sgBox.style.display='none';
+  }catch(e){}
+});
+
+async function selectMedicine(id){
+  try{
+    const r=await fetch(`/medicine/${id}`);const d=await r.json();
+    document.getElementById('id').value=d.id;
+    document.getElementById('medicineName').value=d.medicine.medicineName;
+    document.getElementById('batchNo').value=d.batchNo;
+    document.getElementById('quantity').value=d.quantity;
+    document.getElementById('maxRetailPrice').value=d.maxRetailPrice;
+    document.getElementById('expiryDate').value=d.expiryDate;
+    document.getElementById('dealerName').value=d.supplierName;
+    updateStockStatus(d.quantity);sgBox.style.display='none';searchBox.value=d.medicine.medicineName;
+    showStatus('Medicine loaded','success');closeStockModal();
+  }catch(e){showStatus('Error loading','error');}
+}
+
+updateBtn.addEventListener('click',async()=>{
+  if(!document.getElementById('id').value){showStatus('Select a medicine first','error');return;}
+  const med={id:document.getElementById('id').value,batchNo:document.getElementById('batchNo').value,quantity:parseInt(document.getElementById('quantity').value),maxRetailPrice:parseFloat(document.getElementById('maxRetailPrice').value),expiryDate:document.getElementById('expiryDate').value,supplierName:document.getElementById('dealerName').value};
+  try{
+    const r=await fetch('/inventory/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(med)});
+    if(r.ok){const u=await r.json();showStatus(`Updated: ${u.medicine.medicineName}`,'success');updateDashboard();}
+    else{const t=await r.text();showStatus(`Failed: ${t}`,'error');}
+  }catch(e){showStatus('Network error','error');}
+});
+
+function updateStockStatus(q){
+  const el=document.getElementById('stockStatus');const v=parseInt(q);
+  if(v<=10){el.className='stk-status stk-err';el.textContent='⚠ Critical Stock!';}
+  else if(v<=50){el.className='stk-status stk-warn';el.textContent='⚡ Low Stock';}
+  else{el.className='stk-status stk-ok';el.textContent='✓ Good Stock';}
+  el.style.display='block';
+}
+function showStatus(m,t){status.className=`stk-status stk-${t==='success'?'ok':'err'}`;status.textContent=m;status.style.display='block';setTimeout(()=>status.style.display='none',3000);}
+function clearForm(){['id','medicineName','batchNo','quantity','maxRetailPrice','expiryDate','dealerName'].forEach(f=>document.getElementById(f).value='');searchBox.value='';document.getElementById('stockStatus').style.display='none';}
+function exportExcel(){const s=document.getElementById('exportStartDate').value,e=document.getElementById('exportEndDate').value;if(!s||!e){showStatus('Select both dates','error');return;}location.href=`/exportData?startDate=${s}&endDate=${e}`;}
+async function updateDashboard(){try{const r=await fetch('/inventory/dashboard');const d=await r.json();document.getElementById('totalItems').textContent=d.totalItems;document.getElementById('criticalStock').textContent=d.criticalStock;document.getElementById('lowStock').textContent=d.lowStock;document.getElementById('expiredItems').textContent=d.expiredItems;document.getElementById('totalValue').textContent='₹'+d.totalValue;}catch(e){}}
+document.addEventListener('click',e=>{if(!searchBox.contains(e.target)&&!sgBox.contains(e.target))sgBox.style.display='none';});
+
+function filterTable(){
+  const q=document.getElementById('searchMedicine').value.toLowerCase();
+  const cat=document.getElementById('filterCategory').value;
+  document.querySelectorAll('#stockTable tbody tr').forEach(r=>{
+    const med=r.cells[1].innerText.toLowerCase(), c=r.cells[7].innerText;
+    const show=med.includes(q)&&(cat===''||c===cat);
+    r.style.display=show?'':'none';
+  });
+}
+
+function showStockDetails(type){
+  const titles={critical:'Critical Stock',low:'Low Stock',expiring:'Expiring Soon'};
+  document.getElementById('modalTitle').textContent=titles[type];
+  fetch(`/inventory/stock-details?type=${type}`).then(r=>r.json()).then(items=>{
+    const el=document.getElementById('stockList');
+    if(!items.length)el.innerHTML='<p style="text-align:center;color:#94a3b8;padding:20px;">No items found</p>';
+    else el.innerHTML=items.map(i=>`<div class="stk-item" onclick="selectMedicine(${i.id})"><div class="stk-item-top"><span>${i.medicineName}</span><span>Qty: ${i.quantity}</span></div><div class="stk-item-meta"><span><b>Batch:</b> ${i.batchNo}</span><span><b>MRP:</b> ₹${i.maxRetailPrice}</span><span><b>Expiry:</b> ${i.expiryDate}</span></div></div>`).join('');
+    document.getElementById('stockModal').style.display='block';
+  }).catch(()=>alert('Failed to load'));
+}
+function closeStockModal(){document.getElementById('stockModal').style.display='none';}
+window.onclick=function(e){if(e.target===document.getElementById('stockModal'))closeStockModal();};
+
+document.addEventListener('DOMContentLoaded',()=>{updateDashboard();filterTable();});
+</script>
+</body>
+</html>

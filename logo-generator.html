@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logo Converter</title>
+</head>
+<body>
+    <canvas id="canvas" width="400" height="120"></canvas>
+    <br>
+    <a id="download" download="dhruvit-medical-logo.png">Download PNG Logo</a>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Create logo programmatically
+        function drawLogo() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Medical Cross Background Circle
+            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+            gradient.addColorStop(0, '#6366f1');
+            gradient.addColorStop(1, '#4f46e5');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(60, 60, 36, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // White border for circle
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Medical Cross - Vertical bar
+            ctx.fillStyle = 'white';
+            ctx.fillRect(52, 40, 16, 40);
+            
+            // Medical Cross - Horizontal bar
+            ctx.fillRect(40, 52, 40, 16);
+            
+            // Company Name
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 32px Arial, sans-serif';
+            ctx.fillText('Dhruvit Medical', 120, 70);
+            
+            // Tagline
+            ctx.fillStyle = '#666';
+            ctx.font = '20px Arial, sans-serif';
+            ctx.fillText('Healthcare Solutions', 120, 95);
+            
+            // Convert to PNG and set download link
+            const dataURL = canvas.toDataURL('image/png');
+            document.getElementById('download').href = dataURL;
+        }
+        
+        drawLogo();
+    </script>
+</body>
+</html>

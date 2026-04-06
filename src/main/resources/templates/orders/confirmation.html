@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation | Dhruvit Medical Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <style>
+    .s-card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 1px 8px rgba(0,0,0,0.06); border:1px solid #e8edf2; margin-bottom:14px; }
+    .s-card-hdr { font-size:13px; font-weight:700; color:#007BFF; margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid #e8f4fd; display:flex; align-items:center; gap:6px; }
+
+    .conf-banner { background:linear-gradient(135deg,#dcfce7,#d1fae5); padding:20px; border-radius:10px; text-align:center; margin-bottom:14px; border:1px solid #6ee7b7; }
+    .conf-banner h3 { color:#065f46; margin:0 0 4px; font-size:18px; font-weight:800; }
+    .conf-banner p { color:#059669; margin:0; font-size:13px; font-weight:600; }
+
+    .cust-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .info-block { padding:14px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; }
+    .info-block p { font-size:13px; margin:4px 0; }
+    .info-block strong { color:#007BFF; font-weight:700; }
+    .pill { padding:3px 10px; border-radius:10px; font-size:10px; font-weight:700; }
+    .pill-pending { background:#fef3c7; color:#92400e; }
+
+    .addr-block { padding:10px 14px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; margin-bottom:14px; font-size:13px; }
+    .addr-block strong { color:#007BFF; }
+
+    .tbl-wrap { overflow-x:auto; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:14px; }
+    .v-tbl { width:100%; border-collapse:collapse; }
+    .v-tbl thead th { padding:14px 12px; font-size:12px; background:#f8fafc; font-weight:700; border:none; border-bottom:2px solid #e2e8f0; color:#64748b; text-transform:uppercase; letter-spacing:0.6px; text-align:center; }
+    .v-tbl tbody td { padding:10px 12px; border:none; border-bottom:1px solid #f1f5f9; font-size:13px; text-align:left; }
+    .v-tbl .med-name { font-weight:700; color:#1e293b; }
+    .v-tbl .amt { font-weight:700; color:#007BFF; }
+
+    .sum-card { padding:16px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; margin-bottom:14px; }
+    .sum-r { display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; color:#475569; }
+    .sum-r span:last-child { font-weight:700; color:#1e293b; }
+    .sum-r.total { font-size:16px; border-top:2px solid #e2e8f0; padding-top:10px; margin-top:4px; }
+    .sum-r.total span:last-child { color:#007BFF; font-weight:800; font-size:18px; }
+
+    .act-bar { text-align:center; padding:14px; background:#f8fafc; border-radius:8px; border:1px solid #e8edf2; display:flex; justify-content:center; gap:10px; }
+    .act-btn { padding:9px 20px; font-size:13px; font-weight:700; border:none; border-radius:8px; cursor:pointer; font-family:'Poppins',sans-serif; text-decoration:none; display:inline-block; transition:all 0.2s; }
+    .act-btn-blue { background:#007BFF; color:#fff; }
+    .act-btn-green { background:#28A745; color:#fff; }
+    .act-btn-teal { background:#17a2b8; color:#fff; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="page-content">
+<div class="container">
+  <div class="conf-banner">
+    <h3>✅ Order Confirmed!</h3>
+    <p>Order #<span th:text="${order.id}"></span></p>
+  </div>
+
+  <div class="cust-grid">
+    <div class="info-block">
+      <p><strong>Customer:</strong> <span th:text="${order.customer.name}"></span></p>
+      <p><strong>Phone:</strong> <span th:text="${order.customer.phone}"></span></p>
+    </div>
+    <div class="info-block">
+      <p><strong>Date:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd-MM-yyyy HH:mm')}"></span></p>
+      <p><strong>Status:</strong> <span class="pill pill-pending" th:text="${order.status}"></span></p>
+    </div>
+  </div>
+
+  <div class="addr-block"><strong>Address:</strong> <span th:text="${order.customer.address ?: 'N/A'}"></span></div>
+
+  <div class="s-card">
+    <div class="s-card-hdr">🛒 Order Items</div>
+    <div class="tbl-wrap">
+      <table class="v-tbl">
+        <thead><tr><th style="width:40%;">Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr th:each="item : ${order.orderItems}">
+            <td class="med-name" th:text="${item.medicine.medicineName}"></td>
+            <td th:text="${item.quantity}"></td>
+            <td th:text="'₹' + ${item.maxRetailPrice}"></td>
+            <td class="amt" th:text="'₹' + ${item.totalAmount}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sum-card">
+    <div class="sum-r"><span>Subtotal</span><span>₹<span th:text="${order.totalAmount}"></span></span></div>
+    <div class="sum-r"><span>Discount</span><span>₹<span th:text="${order.discount}"></span></span></div>
+    <div class="sum-r total"><span>Final Amount</span><span>₹<span th:text="${order.finalAmount}"></span></span></div>
+  </div>
+
+  <div class="act-bar">
+    <button onclick="window.print()" class="act-btn act-btn-blue">🖨 Print</button>
+    <a href="/orders/create" class="act-btn act-btn-green">+ New Order</a>
+    <a href="/orders/list" class="act-btn act-btn-teal">📋 All Orders</a>
+  </div>
+</div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

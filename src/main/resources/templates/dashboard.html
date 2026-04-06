@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Dhruvit Medical Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <style>
+    .dash-hero {
+      background: linear-gradient(135deg, #e8f4fd, #dbeafe);
+      color: #0056b3;
+      padding: 18px 28px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #bfdbfe;
+    }
+    .dash-hero h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; border: none; padding: 0; color: #0056b3; }
+    .dash-hero p { font-size: 0.85rem; opacity: 0.85; margin: 0; }
+
+    .dash-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e8edf2;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border-left: 4px solid;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .stat-card.c-blue { border-left-color: #007BFF; }
+    .stat-card.c-green { border-left-color: #28A745; }
+    .stat-card.c-amber { border-left-color: #FFC107; }
+    .stat-card.c-red { border-left-color: #dc3545; }
+
+    .stat-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .stat-card.c-blue .stat-icon { background: #e8f4fd; }
+    .stat-card.c-green .stat-icon { background: #e8f8ee; }
+    .stat-card.c-amber .stat-icon { background: #fff8e1; }
+    .stat-card.c-red .stat-icon { background: #fdecea; }
+
+    .stat-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0; }
+
+    .dash-charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .chart-card {
+      background: #fff;
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e8edf2;
+      height: 260px;
+    }
+    .chart-card h3 {
+      font-size: 14px; font-weight: 700; color: #007BFF;
+      margin-bottom: 10px; text-align: center;
+      padding-bottom: 8px; border-bottom: 2px solid #e8f4fd;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; z-index: 2000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(15,23,42,0.45);
+      backdrop-filter: blur(2px);
+    }
+    .modal-box {
+      background: #fff; padding: 20px; border-radius: 12px;
+      width: 560px; max-width: 92%;
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .modal-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 2px solid #e8f4fd;
+    }
+    .modal-top h3 { margin: 0; color: #007BFF; font-size: 15px; font-weight: 700; }
+    .modal-close { font-size: 24px; color: #94a3b8; cursor: pointer; background: none; border: none; padding: 0 4px; }
+    .modal-close:hover { color: #1e293b; }
+
+    .pend-item {
+      padding: 12px; border: 1px solid #e8edf2; border-radius: 8px;
+      margin-bottom: 8px; background: #f8fafc; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .pend-item:hover { background: #eff6ff; border-color: #93c5fd; }
+    .pend-top { display: flex; justify-content: space-between; font-weight: 700; color: #007BFF; font-size: 13px; margin-bottom: 4px; }
+    .pend-meta { font-size: 11px; color: #64748b; }
+    .pend-meta span { margin-right: 14px; }
+
+    @media (max-width: 768px) {
+      .dash-stats { grid-template-columns: 1fr 1fr; }
+      .dash-charts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="page-content">
+  <section class="dash-hero">
+    <h2>Welcome Back, <span th:text="${user?.fullName ?: 'Admin'}">Admin</span>!</h2>
+    <p>Here's a quick overview of your medical store's performance.</p>
+  </section>
+
+  <section class="dash-stats">
+    <div class="stat-card c-blue">
+      <div class="stat-icon">💊</div>
+      <div><div class="stat-label">Total Medicines</div><p class="stat-value" th:text="${totalMedicines}">0</p></div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-icon">📦</div>
+      <div><div class="stat-label">Available Stocks</div><p class="stat-value" th:text="${availableStocks}">0</p></div>
+    </div>
+    <div class="stat-card c-amber">
+      <div class="stat-icon">📋</div>
+      <div><div class="stat-label">Today's Orders</div><p class="stat-value" th:text="${todaySales}">0</p></div>
+    </div>
+    <div class="stat-card c-red" onclick="showPendingOrders()">
+      <div class="stat-icon">⏳</div>
+      <div><div class="stat-label">Pending Orders</div><p class="stat-value" th:text="${pendingPurchase}">0</p></div>
+    </div>
+  </section>
+
+  <section class="dash-charts">
+    <div class="chart-card">
+      <h3>Monthly Sales</h3>
+      <div style="height:200px;position:relative;"><canvas id="salesChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Stock Distribution</h3>
+      <div style="height:200px;position:relative;"><canvas id="stockChart"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="pendModal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <h3>Pending Orders</h3>
+      <button class="modal-close" onclick="closePendingOrders()">&times;</button>
+    </div>
+    <div id="pendList"></div>
+  </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartOpts = (legend=false) => ({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:legend,position:'bottom',labels:{font:{size:10}}}},scales:legend?{}:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}});
+
+fetch('/dashboard/monthly-sales').then(r=>r.json()).then(d=>{
+  new Chart(document.getElementById('salesChart'),{type:'line',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Sales (₹)',data:d,borderColor:'#007BFF',backgroundColor:'rgba(0,123,255,0.1)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#007BFF'}]},options:chartOpts()});
+}).catch(()=>{
+  new Chart(document.getElementById('salesChart'),{type:'line',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Sales',data:Array(12).fill(0),borderColor:'#007BFF',backgroundColor:'rgba(0,123,255,0.1)',tension:0.35,fill:true}]},options:chartOpts()});
+});
+
+fetch('/dashboard/stock-distribution').then(r=>r.json()).then(d=>{
+  const colors=['#007BFF','#28A745','#FFC107','#dc3545','#6f42c1','#17a2b8','#fd7e14','#20c997'];
+  new Chart(document.getElementById('stockChart'),{type:'doughnut',data:{labels:Object.keys(d),datasets:[{data:Object.values(d),backgroundColor:colors.slice(0,Object.keys(d).length)}]},options:chartOpts(true)});
+}).catch(()=>{
+  new Chart(document.getElementById('stockChart'),{type:'doughnut',data:{labels:['No Data'],datasets:[{data:[1],backgroundColor:['#cbd5e1']}]},options:chartOpts(true)});
+});
+
+function showPendingOrders(){
+  fetch('/dashboard/pending-orders').then(r=>r.json()).then(orders=>{
+    const el=document.getElementById('pendList');
+    if(!orders.length){el.innerHTML='<p style="text-align:center;color:#94a3b8;padding:20px;">No pending orders</p>';}
+    else{el.innerHTML=orders.map(o=>`<div class="pend-item" onclick="location.href='/orders/view/${o.id}'"><div class="pend-top"><span>Order #${o.id}</span><span>₹${o.finalAmount}</span></div><div class="pend-meta"><span><b>Customer:</b> ${o.customerName}</span><span><b>Phone:</b> ${o.customerPhone}</span><span><b>Date:</b> ${new Date(o.orderDate).toLocaleString()}</span></div></div>`).join('');}
+    document.getElementById('pendModal').style.display='block';
+  }).catch(()=>alert('Failed to load'));
+}
+function closePendingOrders(){document.getElementById('pendModal').style.display='none';}
+window.onclick=function(e){if(e.target===document.getElementById('pendModal'))closePendingOrders();};
+</script>
+</body>
+</html>

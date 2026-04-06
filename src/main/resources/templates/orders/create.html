@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title>Create Order | Dhruvit Medical Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/orders.css}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="page-content">
+<div class="container" style="max-width:1400px;">
+  <h2>Create Customer Order</h2>
+  <div id="messageArea"></div>
+
+  <form th:action="@{/orders/process}" method="post" id="orderForm">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <input type="hidden" id="customerId" name="customerId" />
+    <input type="hidden" name="customerName" id="customerName">
+    <input type="hidden" name="customerPhone" id="customerPhone">
+    <input type="hidden" name="customerAddress" id="customerAddress">
+
+    <!-- ===== SPLIT PANE ===== -->
+    <div class="split-pane">
+
+      <!-- ===== LEFT PANE (30%) — Customer + Summary ===== -->
+      <div class="pane-left">
+
+        <!-- Customer Card -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">👤</span> Customer</div>
+
+          <div class="cust-search">
+            <label>Search Customer</label>
+            <input type="text" id="customerSearch" placeholder="Name or phone..." autocomplete="off">
+            <div id="customerResults"></div>
+          </div>
+
+          <div class="cust-chip" id="custChip">
+            <div class="cust-chip-info">
+              <div class="cust-avatar" id="custAvatar"></div>
+              <div>
+                <div class="cust-chip-name" id="chipName"></div>
+                <div class="cust-chip-phone" id="chipPhone"></div>
+              </div>
+            </div>
+            <button type="button" class="cust-chip-clear" onclick="clearCustomer()" title="Remove">✕</button>
+          </div>
+
+          <div class="add-cust-link">
+            <a href="#" onclick="toggleQuickAdd(); return false;">+ New Customer</a>
+          </div>
+
+          <div class="quick-add" id="quickAddForm">
+            <h4>⚡ Quick Add</h4>
+            <div class="qa-grid">
+              <div><label>Name *</label><input type="text" id="qaName" placeholder="Name"></div>
+              <div><label>Phone *</label><input type="tel" id="qaPhone" placeholder="10 digits" maxlength="10"></div>
+              <div><label>Email</label><input type="email" id="qaEmail" placeholder="Optional"></div>
+              <div><label>Address</label><input type="text" id="qaAddr" placeholder="Optional"></div>
+            </div>
+            <div class="qa-actions">
+              <button type="button" class="qa-btn-save" onclick="saveNewCustomer()">✓ Save</button>
+              <button type="button" class="qa-btn-cancel" onclick="toggleQuickAdd()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Summary Card (always visible) -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">🧾</span> Order Summary</div>
+
+          <div class="summary-items-count" id="itemsCount">0 items in cart</div>
+
+          <div class="sum-row">
+            <span>Subtotal</span>
+            <span id="subtotalAmt">₹0.00</span>
+          </div>
+          <div class="sum-row">
+            <span>Discount</span>
+            <input type="number" id="discount" name="discount" class="sum-discount" placeholder="0" value="0" step="0.01" min="0" oninput="updateOrder()">
+          </div>
+          <hr class="sum-divider">
+          <div class="sum-row total">
+            <span>Total</span>
+            <span id="totalAmt">₹0.00</span>
+          </div>
+
+          <button type="submit" class="btn-confirm" disabled>Add items to order</button>
+        </div>
+      </div>
+
+      <!-- ===== RIGHT PANE (70%) — Medicine Search + Order Table ===== -->
+      <div class="pane-right">
+
+        <!-- Medicine Search -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">💊</span> Add Medicines</div>
+          <div class="med-search">
+            <label>Medicine Search</label>
+            <div class="med-search-wrap">
+              <input type="text" id="medicineSearch" placeholder="Search by name or generic salt..." autocomplete="off">
+            </div>
+            <div class="kbd-hint"><kbd>F2</kbd> focus &nbsp;·&nbsp; <kbd>Esc</kbd> clear</div>
+            <div id="searchResults"></div>
+          </div>
+        </div>
+
+        <!-- Order Items Table -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">📋</span> Order Items</div>
+          <div class="tbl-wrap">
+            <table id="orderTable">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th style="width:85px;">Price</th>
+                  <th style="width:90px;">Qty</th>
+                  <th style="width:95px;">Total</th>
+                  <th style="width:50px;"></th>
+                </tr>
+              </thead>
+              <tbody id="orderItems">
+                <tr>
+                  <td colspan="5" class="empty-cart">
+                    <span class="ec-icon">🛒</span>
+                    <span class="ec-text">Search and add medicines to start</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /split-pane -->
+  </form>
+</div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script>
+let cart = [];
+let total = 0;
+
+/* ===== KEYBOARD SHORTCUTS ===== */
+$(document).on('keydown', function(e) {
+    if (e.key === 'F2') { e.preventDefault(); $('#medicineSearch').focus(); }
+    if (e.key === 'Escape') {
+        $('#medicineSearch, #customerSearch').val('');
+        $('#searchResults, #customerResults').html('');
+    }
+});
+
+/* ===== QUICK ADD CUSTOMER ===== */
+function toggleQuickAdd() {
+    const f = $('#quickAddForm');
+    f.slideToggle(180);
+    if (!f.is(':visible')) setTimeout(() => $('#qaName').focus(), 190);
+}
+
+function saveNewCustomer() {
+    const name = $('#qaName').val().trim(), phone = $('#qaPhone').val().trim();
+    const email = $('#qaEmail').val().trim(), addr = $('#qaAddr').val().trim();
+    if (!name || !phone) { toast('Name and Phone required!', 'err'); return; }
+    if (phone.length !== 10) { toast('Phone must be 10 digits!', 'err'); return; }
+
+    const csrf = $('meta[name="_csrf"]').attr('content');
+    const hdr = $('meta[name="_csrf_header"]').attr('content');
+
+    $.ajax({
+        url: '/customer/save', type: 'POST',
+        data: { name, phone, email, address: addr },
+        beforeSend: xhr => xhr.setRequestHeader(hdr, csrf),
+        success() {
+            toast('Customer saved!', 'ok');
+            $.get('/customer/search', {query: phone}, data => {
+                if (data.length) pickCustomer(data[0].name, data[0].phone, data[0].address || '', data[0].id);
+            });
+            toggleQuickAdd();
+            $('#qaName, #qaPhone, #qaEmail, #qaAddr').val('');
+        },
+        error() { toast('Error saving customer', 'err'); }
+    });
+}
+
+/* ===== CUSTOMER SEARCH ===== */
+$('#customerSearch').on('input', function() {
+    const q = $(this).val();
+    if (q.length > 2) {
+        $.get('/customer/search', {query: q}, data => {
+            let h = '';
+            if (!data.length) {
+                h = '<div class="sr-empty">No customers found</div>';
+            } else {
+                data.forEach(c => {
+                    h += `<div class="cr-item" onclick="pickCustomer('${c.name}','${c.phone}','${c.address||''}',${c.id})">
+                        <strong>${c.name}</strong> · ${c.phone}<br><small>${c.address||'No address'}</small>
+                    </div>`;
+                });
+            }
+            $('#customerResults').html(h);
+        });
+    } else {
+        $('#customerResults').html('');
+    }
+});
+
+function pickCustomer(name, phone, addr, id) {
+    $('#customerName').val(name);
+    $('#customerPhone').val(phone);
+    $('#customerAddress').val(addr);
+    $('#customerId').val(id);
+    $('#customerSearch').val('');
+    $('#customerResults').html('');
+    $('#custAvatar').text(name.charAt(0).toUpperCase());
+    $('#chipName').text(name);
+    $('#chipPhone').text(phone);
+    $('#custChip').addClass('active');
+}
+
+function clearCustomer() {
+    $('#customerName, #customerPhone, #customerAddress, #customerId').val('');
+    $('#custChip').removeClass('active');
+}
+
+/* ===== MEDICINE SEARCH ===== */
+$('#medicineSearch').on('input', function() {
+    const q = $(this).val();
+    if (q.length > 2) {
+        $.get('/orders/search', {query: q}, data => {
+            let h = '';
+            if (!data.length) {
+                h = '<div class="sr-empty">No medicines found</div>';
+            } else {
+                data.forEach(it => {
+                    const nm = it.medicineName || 'Unknown';
+                    const mfg = it.manufacturer || '';
+                    const gen = it.genericName || '';
+                    const pr = it.maxRetailPrice > 0 ? it.maxRetailPrice : (it.purchaseRate * 1.2);
+                    const stk = it.quantity;
+                    const exp = it.expiryDate;
+
+                    // Stock pill
+                    let stkCls = 'pill-stock', stkLbl = stk + ' in stock';
+                    if (stk === 0) { stkCls = 'pill-stock-out'; stkLbl = 'Out of Stock'; }
+                    else if (stk <= 10) { stkCls = 'pill-stock-low'; stkLbl = stk + ' left'; }
+
+                    // Expiry pill
+                    let expHtml = '';
+                    if (exp) {
+                        const d = new Date(exp), now = new Date();
+                        const dm = (d.getFullYear()-now.getFullYear())*12 + d.getMonth()-now.getMonth();
+                        if (dm <= 0) expHtml = '<span class="pill pill-expiry-danger">⚠ Expired</span>';
+                        else if (dm <= 3) expHtml = `<span class="pill pill-expiry-danger">⚠ Exp ${exp}</span>`;
+                        else if (dm <= 6) expHtml = `<span class="pill pill-expiry-warn">Exp ${exp}</span>`;
+                    }
+
+                    const btn = stk > 0
+                        ? `<button type="button" class="sr-add-btn ok" onclick="addItem(${it.id},'${esc(nm)}',${pr},${stk},'${esc(mfg)}','${exp||''}')">+ Add</button>`
+                        : `<button type="button" class="sr-add-btn off" disabled>N/A</button>`;
+
+                    h += `<div class="sr-item">
+                        <div class="sr-info">
+                            <div class="sr-name">${nm}</div>
+                            ${gen ? `<div class="sr-generic">${gen}</div>` : ''}
+                            <div class="sr-mfg">${mfg}</div>
+                        </div>
+                        <div class="sr-badges">
+                            <span class="pill pill-price">₹${pr.toFixed(2)}</span>
+                            <span class="pill ${stkCls}">${stkLbl}</span>
+                            ${expHtml}
+                        </div>
+                        ${btn}
+                    </div>`;
+                });
+            }
+            $('#searchResults').html(h);
+        }).fail(() => {
+            $('#searchResults').html('<div class="sr-empty">Search error</div>');
+        });
+    } else {
+        $('#searchResults').html('');
+    }
+});
+
+function esc(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+/* ===== CART ===== */
+function addItem(id, name, price, stock, mfg, expiry) {
+    const sn = $('<div>').text(name).html();
+    const sm = $('<div>').text(mfg).html();
+    const ex = cart.find(i => i.id === id);
+    if (ex) {
+        if (ex.qty < stock) { ex.qty++; toast(sn + ' qty updated', 'ok'); }
+        else { toast('Only ' + stock + ' available', 'err'); }
+    } else {
+        cart.push({id, name: sn, price, qty: 1, stock, mfg: sm, expiry});
+        toast(sn + ' added', 'ok');
+    }
+    updateOrder();
+    $('#medicineSearch').val('').focus();
+    $('#searchResults').html('');
+}
+
+function rmItem(id) {
+    const it = cart.find(i => i.id === id);
+    if (it) toast(it.name + ' removed', 'ok');
+    cart = cart.filter(i => i.id !== id);
+    updateOrder();
+}
+
+function chgQty(id, v) {
+    const it = cart.find(i => i.id === id);
+    if (!it) return;
+    const n = parseInt(v);
+    if (n > 0 && n <= it.stock) { it.qty = n; updateOrder(); }
+    else if (n > it.stock) { toast('Only ' + it.stock + ' available', 'err'); $(`input[data-id="${id}"]`).val(it.qty); }
+}
+
+function updateOrder() {
+    let h = '';
+    total = 0;
+
+    if (!cart.length) {
+        h = `<tr><td colspan="5" class="empty-cart">
+            <span class="ec-icon">🛒</span><span class="ec-text">Search and add medicines to start</span>
+        </td></tr>`;
+    } else {
+        cart.forEach(it => {
+            const t = it.price * it.qty;
+            total += t;
+
+            let ew = '';
+            if (it.expiry) {
+                const d = new Date(it.expiry), now = new Date();
+                const dm = (d.getFullYear()-now.getFullYear())*12 + d.getMonth()-now.getMonth();
+                if (dm <= 0) ew = '<span class="m-exp-warn" style="background:#fee2e2;color:#991b1b;">⚠ Expired</span>';
+                else if (dm <= 3) ew = `<span class="m-exp-warn" style="background:#fef3c7;color:#92400e;">⚠ Exp ${it.expiry}</span>`;
+            }
+
+            h += `<tr>
+                <td class="med-cell">
+                    <div class="m-name">${it.name}</div>
+                    <div class="m-mfg">${it.mfg}</div>${ew}
+                </td>
+                <td class="price-col">₹${it.price.toFixed(2)}</td>
+                <td>
+                    <input type="number" data-id="${it.id}" value="${it.qty}" min="1" max="${it.stock}" class="qty-inp" onchange="chgQty(${it.id},this.value)">
+                    <span class="qty-max">Max ${it.stock}</span>
+                </td>
+                <td class="total-col">₹${t.toFixed(2)}</td>
+                <td><button type="button" class="btn-rm" onclick="rmItem(${it.id})">✕</button></td>
+            </tr>`;
+        });
+    }
+
+    $('#orderItems').html(h);
+    $('#subtotalAmt').text('₹' + total.toFixed(2));
+
+    const disc = parseFloat($('#discount').val()) || 0;
+    $('#totalAmt').text('₹' + Math.max(0, total - disc).toFixed(2));
+
+    const cnt = cart.reduce((s, i) => s + i.qty, 0);
+    $('#itemsCount').text(cnt + (cnt === 1 ? ' item' : ' items') + ' in cart');
+
+    const btn = $('.btn-confirm');
+    if (!cart.length) btn.prop('disabled', true).text('Add items to order');
+    else btn.prop('disabled', false).text('✓ Confirm Order');
+}
+
+/* ===== TOAST ===== */
+function toast(msg, type) {
+    const ic = type === 'ok' ? '✓' : '✕';
+    const cls = type === 'ok' ? 'toast-ok' : 'toast-err';
+    const safe = $('<div>').text(msg).html();
+    $('#messageArea').html(`<div class="toast ${cls}">${ic} ${safe}<button type="button" class="toast-close" onclick="$(this).parent().fadeOut()">×</button></div>`);
+    setTimeout(() => $('.toast').fadeOut(180), 3000);
+}
+
+/* ===== FORM SUBMIT ===== */
+$('#orderForm').on('submit', function(e) {
+    e.preventDefault();
+    if (!$('#customerId').val()) { toast('Select a customer first', 'err'); return; }
+    if (!cart.length) { toast('Add items to the order', 'err'); return; }
+    $(this).find('input[type="hidden"]:not([name*="csrf"]):not([id="customerId"])').remove();
+    cart.forEach(i => $(this).append(`<input type="hidden" name="qty_${i.id}" value="${i.qty}">`));
+    this.submit();
+});
+
+/* ===== INIT ===== */
+$(document).ready(function() { updateOrder(); });
+</script>
+</body>
+</html>

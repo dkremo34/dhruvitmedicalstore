@@ -1,0 +1,106 @@
+/* Base Styles */
+* { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+body { margin: 0; background: #f4f8ff; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+html { overflow-x: hidden; }
+
+/* Header */
+.navbar {
+  background: #004aad;
+  color: white;
+  padding: 15px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+.navbar .logo { font-size: 20px; font-weight: 600; }
+.navbar nav a { color: white; text-decoration: none; margin-left: 20px; }
+.navbar nav a:hover { color: #ffd700; }
+
+/* Footer */
+footer {
+  background: #004aad;
+  color: white;
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  margin-top: auto;
+}
+
+/* Page content wrapper */
+.page-content {
+  flex: 1;
+  margin-top: 70px;
+  padding: 20px 40px;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Dashboard Header */
+.dashboard-header h2 {
+  color: #004aad;
+  margin: 0;
+}
+.dashboard-header p {
+  color: #555;
+  margin-bottom: 30px;
+}
+
+/* Cards Grid */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease;
+}
+.card:hover { transform: translateY(-3px); }
+
+.card h4 { font-size: 12px; color: #555; margin-bottom: 8px; }
+.card p { font-size: 22px; font-weight: 600; }
+
+/* Card Colors */
+.primary { border-left: 5px solid #004aad; }
+.success { border-left: 5px solid #00b894; }
+.warning { border-left: 5px solid #ff9f43; }
+.danger  { border-left: 5px solid #ff6b6b; }
+
+/* Charts Grid */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.chart-card {
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  height: 180px;
+}
+
+.chart-card h3 {
+  text-align: center;
+  margin-bottom: 5px;
+  color: #004aad;
+  font-size: 14px;
+}
+
+.chart-card canvas {
+  max-height: 150px;
+}
+
+/* Footer & header consistency handled by fragments */

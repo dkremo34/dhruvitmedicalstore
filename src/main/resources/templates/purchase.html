@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title>Purchase Entry | Dhruvit Medical</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/orders.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="page-content">
+<div class="container" style="max-width:1400px;">
+  <h2>Purchase Entry</h2>
+  <div id="messageArea"></div>
+
+  <form id="purchaseForm">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+    <!-- ===== SPLIT PANE ===== -->
+    <div class="split-pane">
+
+      <!-- ===== LEFT PANE — Supplier + Summary ===== -->
+      <div class="pane-left">
+
+        <!-- Supplier Card -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">🏪</span> Supplier Details</div>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <label class="p-label">Purchase Date *</label>
+              <input type="date" id="purchaseDate" class="p-input" required>
+            </div>
+            <div>
+              <label class="p-label">Invoice No *</label>
+              <input type="text" id="invoiceNo" class="p-input" placeholder="Invoice number" required>
+            </div>
+            <div>
+              <label class="p-label">Supplier Name *</label>
+              <input type="text" id="supplierName" class="p-input" placeholder="Supplier / Dealer name" required>
+            </div>
+            <div>
+              <label class="p-label">Payment Mode</label>
+              <select id="paymentMode" class="p-input">
+                <option value="Cash">Cash</option>
+                <option value="Credit">Credit</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Online">Online Transfer</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Purchase Summary Card -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">🧾</span> Purchase Summary</div>
+
+          <div class="summary-items-count" id="itemsCount">0 items added</div>
+
+          <div class="sum-row">
+            <span>Total Items</span>
+            <span id="totalItems">0</span>
+          </div>
+          <div class="sum-row">
+            <span>Total Quantity</span>
+            <span id="totalQty">0</span>
+          </div>
+          <hr class="sum-divider">
+          <div class="sum-row total">
+            <span>Total</span>
+            <span id="totalAmt">₹0.00</span>
+          </div>
+
+          <button type="submit" class="btn-confirm" id="saveBtn" disabled>Add items to purchase</button>
+        </div>
+      </div>
+
+      <!-- ===== RIGHT PANE — Medicine Search + Purchase Table ===== -->
+      <div class="pane-right">
+
+        <!-- Medicine Search -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">💊</span> Add Medicines</div>
+          <div class="med-search">
+            <label>Medicine Search</label>
+            <div class="med-search-wrap">
+              <input type="text" id="medicineSearch" placeholder="Search by medicine name..." autocomplete="off">
+            </div>
+            <div class="kbd-hint"><kbd>F2</kbd> focus &nbsp;·&nbsp; <kbd>Alt+A</kbd> add row &nbsp;·&nbsp; <kbd>Ctrl+S</kbd> save</div>
+            <div id="searchResults"></div>
+          </div>
+        </div>
+
+        <!-- Purchase Items Table -->
+        <div class="s-card">
+          <div class="s-card-header"><span class="ico">📋</span> Purchase Items</div>
+          <div class="tbl-wrap">
+            <table id="orderTable">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th style="width:90px;">Batch No</th>
+                  <th style="width:65px;">Qty</th>
+                  <th style="width:85px;">Rate (₹)</th>
+                  <th style="width:85px;">MRP (₹)</th>
+                  <th style="width:100px;">Expiry</th>
+                  <th style="width:85px;">Amount</th>
+                  <th style="width:40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="purchaseItems">
+                <tr>
+                  <td colspan="8" class="empty-cart">
+                    <span class="ec-icon">🛒</span>
+                    <span class="ec-text">Search and add medicines to start</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /split-pane -->
+  </form>
+
+  <div id="responseMsg"></div>
+</div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<style>
+  .p-label {
+    font-size:11px; font-weight:700; color:#64748b;
+    text-transform:uppercase; letter-spacing:0.4px;
+    margin-bottom:4px; display:block;
+  }
+  .p-input {
+    width:100%; padding:9px 12px; font-size:13px;
+    border:2px solid #e2e8f0; border-radius:8px; background:#f8fafc;
+    font-family:'Poppins',sans-serif; transition:all 0.2s; color:#1e293b;
+  }
+  .p-input:focus { outline:none; border-color:#007BFF; background:#fff; box-shadow:0 0 0 3px rgba(0,123,255,0.1); }
+
+  .p-row-input {
+    width:100%; padding:6px 8px; font-size:12px;
+    border:2px solid #e2e8f0; border-radius:6px;
+    font-family:'Poppins',sans-serif; transition:border-color 0.2s;
+  }
+  .p-row-input:focus { outline:none; border-color:#007BFF; box-shadow:0 0 0 2px rgba(0,123,255,0.08); }
+  .p-row-input[readonly] { background:#f0f4f8; color:#64748b; }
+
+  #orderTable tbody td { padding:6px 4px !important; }
+</style>
+
+<script>
+document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+let cart = [];
+
+/* ===== KEYBOARD SHORTCUTS ===== */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'F2') { e.preventDefault(); document.getElementById('medicineSearch').focus(); }
+  if (e.key === 'Escape') { document.getElementById('medicineSearch').value=''; document.getElementById('searchResults').innerHTML=''; }
+  if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); document.getElementById('purchaseForm').requestSubmit(); }
+});
+
+/* ===== MEDICINE SEARCH ===== */
+document.getElementById('medicineSearch').addEventListener('input', function() {
+  const q = this.value.trim();
+  if (q.length < 2) { document.getElementById('searchResults').innerHTML=''; return; }
+
+  fetch('/api/medicine/searchWithStock?query=' + encodeURIComponent(q))
+    .then(r => r.json())
+    .then(data => {
+      let h = '';
+      if (!data.length) {
+        h = '<div class="sr-empty">No medicines found</div>';
+      } else {
+        data.forEach(med => {
+          const stk = med.currentStock || 0;
+          const cls = stk === 0 ? 'pill-stock-out' : stk < 10 ? 'pill-stock-low' : 'pill-stock';
+          const lbl = stk === 0 ? 'No Stock' : stk + ' in stock';
+          h += `<div class="sr-item" onclick="addMedicine(${med.id},'${esc(med.medicineName)}','${esc(med.manufacturer||'')}',${med.mrp||0})">
+            <div class="sr-info">
+              <div class="sr-name">${med.medicineName}</div>
+              <div class="sr-mfg">${med.manufacturer||''}</div>
+            </div>
+            <div class="sr-badges">
+              ${med.mrp ? '<span class="pill pill-price">₹'+med.mrp+'</span>' : ''}
+              <span class="pill ${cls}">${lbl}</span>
+            </div>
+            <button type="button" class="sr-add-btn ok" onclick="event.stopPropagation();addMedicine(${med.id},'${esc(med.medicineName)}','${esc(med.manufacturer||'')}',${med.mrp||0})">+ Add</button>
+          </div>`;
+        });
+        h += '<div class="sr-item" style="justify-content:center;" onclick="window.open(\'/medicine?mode=add\',\'_blank\')"><span style="color:#007BFF;font-weight:700;font-size:12px;">+ Quick Add New Medicine</span></div>';
+      }
+      document.getElementById('searchResults').innerHTML = h;
+    })
+    .catch(() => { document.getElementById('searchResults').innerHTML=''; });
+});
+
+function esc(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+/* ===== CART ===== */
+function addMedicine(id, name, mfg, mrp) {
+  const ex = cart.find(i => i.id === id);
+  if (ex) { toast(name + ' already added — update qty in table', 'err'); return; }
+  cart.push({ id, name, mfg, mrp, batchNo:'', qty:1, rate:0, expiry:'' });
+  toast(name + ' added', 'ok');
+  renderTable();
+  document.getElementById('medicineSearch').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('medicineSearch').focus();
+}
+
+function removeItem(id) {
+  const it = cart.find(i => i.id === id);
+  if (it) toast(it.name + ' removed', 'ok');
+  cart = cart.filter(i => i.id !== id);
+  renderTable();
+}
+
+function updateField(id, field, value) {
+  const it = cart.find(i => i.id === id);
+  if (!it) return;
+  if (field === 'qty') it.qty = parseInt(value) || 0;
+  else if (field === 'rate') it.rate = parseFloat(value) || 0;
+  else if (field === 'mrp') it.mrp = parseFloat(value) || 0;
+  else if (field === 'batchNo') it.batchNo = value;
+  else if (field === 'expiry') it.expiry = value;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('purchaseItems');
+  let h = '';
+  let totalAmt = 0, totalQty = 0;
+
+  if (!cart.length) {
+    h = `<tr><td colspan="8" class="empty-cart">
+      <span class="ec-icon">🛒</span><span class="ec-text">Search and add medicines to start</span>
+    </td></tr>`;
+  } else {
+    cart.forEach(it => {
+      const amt = it.qty * it.rate;
+      totalAmt += amt;
+      totalQty += it.qty;
+
+      h += `<tr>
+        <td class="med-cell">
+          <div class="m-name">${it.name}</div>
+          <div class="m-mfg">${it.mfg}</div>
+        </td>
+        <td><input type="text" class="p-row-input" value="${it.batchNo}" onchange="updateField(${it.id},'batchNo',this.value)" placeholder="Batch"></td>
+        <td><input type="number" class="qty-inp" value="${it.qty}" min="1" onchange="updateField(${it.id},'qty',this.value)"></td>
+        <td><input type="number" class="p-row-input" value="${it.rate||''}" step="0.01" onchange="updateField(${it.id},'rate',this.value)" placeholder="0.00"></td>
+        <td><input type="number" class="p-row-input" value="${it.mrp||''}" step="0.01" onchange="updateField(${it.id},'mrp',this.value)" placeholder="0.00"></td>
+        <td><input type="date" class="p-row-input" value="${it.expiry}" onchange="updateField(${it.id},'expiry',this.value)"></td>
+        <td class="total-col">₹${amt.toFixed(2)}</td>
+        <td><button type="button" class="btn-rm" onclick="removeItem(${it.id})">✕</button></td>
+      </tr>`;
+    });
+  }
+
+  tbody.innerHTML = h;
+  document.getElementById('totalItems').textContent = cart.length;
+  document.getElementById('totalQty').textContent = totalQty;
+  document.getElementById('totalAmt').textContent = '₹' + totalAmt.toFixed(2);
+  document.getElementById('itemsCount').textContent = cart.length + (cart.length === 1 ? ' item' : ' items') + ' added';
+
+  const btn = document.getElementById('saveBtn');
+  if (!cart.length) { btn.disabled = true; btn.textContent = 'Add items to purchase'; }
+  else { btn.disabled = false; btn.textContent = '✓ Save Purchase'; }
+}
+
+/* ===== TOAST ===== */
+function toast(msg, type) {
+  const ic = type === 'ok' ? '✓' : '✕';
+  const cls = type === 'ok' ? 'toast-ok' : 'toast-err';
+  document.getElementById('messageArea').innerHTML = `<div class="toast ${cls}">${ic} ${msg}<button type="button" class="toast-close" onclick="this.parentElement.style.display='none'">×</button></div>`;
+  setTimeout(() => { const t = document.querySelector('.toast'); if (t) t.style.display = 'none'; }, 3000);
+}
+
+/* ===== SUBMIT ===== */
+document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const supplierName = document.getElementById('supplierName').value.trim();
+  const invoiceNo = document.getElementById('invoiceNo').value.trim();
+  if (!supplierName) { toast('Supplier name is required', 'err'); return; }
+  if (!cart.length) { toast('Add at least one medicine', 'err'); return; }
+
+  // Validate all items
+  for (const it of cart) {
+    if (!it.batchNo) { toast('Batch number required for ' + it.name, 'err'); return; }
+    if (it.qty <= 0) { toast('Quantity must be > 0 for ' + it.name, 'err'); return; }
+    if (it.rate <= 0) { toast('Purchase rate required for ' + it.name, 'err'); return; }
+    if (it.mrp <= 0) { toast('MRP required for ' + it.name, 'err'); return; }
+    if (!it.expiry) { toast('Expiry date required for ' + it.name, 'err'); return; }
+  }
+
+  const purchaseData = {
+    purchaseDate: document.getElementById('purchaseDate').value,
+    invoiceNo: invoiceNo,
+    supplierName: supplierName,
+    paymentMode: document.getElementById('paymentMode').value,
+    items: cart.map(it => ({
+      medicineId: it.id,
+      batchNo: it.batchNo,
+      quantity: it.qty,
+      purchaseRate: it.rate,
+      mrp: it.mrp,
+      expiryDate: it.expiry
+    }))
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
+  const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+  const headers = { 'Content-Type': 'application/json' };
+  if (csrfToken) headers[csrfHeader] = csrfToken;
+
+  fetch('/api/purchases/add', { method: 'POST', headers: headers, body: JSON.stringify(purchaseData) })
+    .then(res => res.text())
+    .then(msg => {
+      btn.textContent = '✓ Save Purchase'; btn.disabled = false;
+      if (msg === 'success') {
+        toast('Purchase saved successfully!', 'ok');
+        cart = [];
+        renderTable();
+        document.getElementById('invoiceNo').value = '';
+      } else {
+        toast(msg, 'err');
+      }
+    })
+    .catch(() => {
+      btn.textContent = '✓ Save Purchase'; btn.disabled = false;
+      toast('Server error', 'err');
+    });
+});
+
+/* ===== CLOSE SEARCH ON OUTSIDE CLICK ===== */
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.med-search')) document.getElementById('searchResults').innerHTML = '';
+});
+
+/* ===== INIT ===== */
+renderTable();
+</script>
+</body>
+</html>

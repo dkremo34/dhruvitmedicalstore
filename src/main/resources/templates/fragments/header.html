@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header class="navbar" th:fragment="header">
+  <div class="logo" style="display: flex; align-items: center;">
+    <img th:src="@{/image/logo.png}" alt="Logo" style="height: 50px; margin-right: 10px; object-fit: contain;">
+    Dhruvit Medical Store
+  </div>
+
+  <nav class="nav-right">
+    <a th:if="${user}" th:href="@{/dashboard}">Dashboard</a>
+    <!--<a th:if="${user}" th:href="@{/stocks}">Stocks</a>-->
+    <a th:if="${user}" th:href="@{/inventory}">Inventory</a>
+    <a th:if="${user}" th:href="@{/purchase}">Purchase</a>
+    <div th:if="${user}" class="dropdown" style="display: inline-block; position: relative;">
+      <a href="#" onclick="toggleDropdown(event)">Medicine ▼</a>
+      <div class="dropdown-menu" style="display: none; position: absolute; background: white; border: none; min-width: 180px; z-index: 1000; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 8px 0; margin-top: 8px; overflow: hidden;">
+        <a th:href="@{/medicine?mode=add}" style="display: block; padding: 10px 18px; text-decoration: none; color: #333; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#f0f7ff';this.style.color='#007BFF'" onmouseout="this.style.background='white';this.style.color='#333'">➕ Add Medicine</a>
+        <a th:href="@{/medicine?mode=update}" style="display: block; padding: 10px 18px; text-decoration: none; color: #333; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#f0f7ff';this.style.color='#007BFF'" onmouseout="this.style.background='white';this.style.color='#333'">✏️ Update Medicine</a>
+      </div>
+    </div>
+    <div th:if="${user}" class="dropdown" style="display: inline-block; position: relative;">
+      <a href="#" onclick="toggleDropdown(event)">Orders ▼</a>
+      <div class="dropdown-menu" style="display: none; position: absolute; background: white; border: none; min-width: 180px; z-index: 1000; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 8px 0; margin-top: 8px; overflow: hidden;">
+        <a th:href="@{/orders/create}" style="display: block; padding: 10px 18px; text-decoration: none; color: #333; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#f0f7ff';this.style.color='#007BFF'" onmouseout="this.style.background='white';this.style.color='#333'">🛒 New Order</a>
+        <a th:href="@{/orders/list}" style="display: block; padding: 10px 18px; text-decoration: none; color: #333; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#f0f7ff';this.style.color='#007BFF'" onmouseout="this.style.background='white';this.style.color='#333'">📋 View Orders</a>
+        <a th:href="@{/customer}" style="display: block; padding: 10px 18px; text-decoration: none; color: #333; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#f0f7ff';this.style.color='#007BFF'" onmouseout="this.style.background='white';this.style.color='#333'">👤 Add Customer</a>
+      </div>
+    </div>
+    <div th:if="${user}" class="profile-dropdown" style="display: inline-block; position: relative; margin-left: 15px;">
+      <a href="#" onclick="toggleProfile(event)" class="profile-btn" style="display: flex; align-items: center; gap: 6px;">
+        <span style="background: rgba(255,255,255,0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold;" th:text="${user.fullName.substring(0,1).toUpperCase()}"></span>
+        <span th:text="${user.fullName}"></span> ▼
+      </a>
+      <div class="profile-menu" id="profileMenu" style="display: none; position: absolute; right: 0; top: 45px; background: white; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-width: 180px; z-index: 1001; padding: 0; margin: 0;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid #eee;">
+          <div style="font-weight: 600; color: #333;" th:text="${user.fullName}"></div>
+          <div style="font-size: 12px; color: #888;" th:text="${user.username}"></div>
+        </div>
+        <a th:href="@{/logout}" style="display: block; padding: 10px 16px; margin: 0; color: white; background: #d63031; text-decoration: none; font-size: 14px; text-align: center; font-weight: 500; border-radius: 0 0 8px 8px; transition: background 0.2s;" onmouseover="this.style.background='#c0392b'" onmouseout="this.style.background='#d63031'">⎋ Logout</a>
+      </div>
+    </div>
+    <a th:unless="${user}" th:href="@{/}">Home</a>
+    <a th:unless="${user}" th:href="@{/register}">Register</a>
+  </nav>
+  
+  <script>
+    function toggleDropdown(event) {
+      event.preventDefault();
+      const dropdown = event.target.nextElementSibling;
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function toggleProfile(event) {
+      event.preventDefault();
+      const menu = document.getElementById('profileMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', function(event) {
+      document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+        if (!dropdown.parentElement.contains(event.target)) dropdown.style.display = 'none';
+      });
+      const profileMenu = document.getElementById('profileMenu');
+      if (profileMenu && !profileMenu.parentElement.contains(event.target)) profileMenu.style.display = 'none';
+    });
+  </script>
+</header>
+
+</body>
+</html>
