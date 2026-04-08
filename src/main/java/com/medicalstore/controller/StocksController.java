@@ -55,4 +55,9 @@ public class StocksController {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @GetMapping("/running")
+    public String home() {
+        return "APP RUNNING 🚀";
+    }
+
 }
