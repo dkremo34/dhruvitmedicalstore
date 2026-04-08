@@ -1,0 +1,13 @@
+target/
+logs/
+.git/
+.github/
+.idea/
+*.iml
+*.log
+.gitignore
+.gitattributes
+HELP.md
+qodana.yaml
+qodana.sarif.json
+logo-generator.html
